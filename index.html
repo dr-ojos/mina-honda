@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="Mina Honda: un buscaminas con vidas, combos, gemas, herramientas y pisos cada vez más hondos.">
+<script>document.documentElement.classList.add('js')</script>
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}img{max-width:100%}</style>
 <title>Mina Honda</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -205,7 +206,7 @@ button:focus-visible{outline:2px solid var(--lamp);outline-offset:2px}
 }
 .frame.lit .lamp{opacity:0}
 
-.banner{position:absolute;left:50%;top:50%;z-index:5;transform:translate(-50%,-50%);pointer-events:none;opacity:0;text-align:center;padding:12px 26px;background:var(--shade);border-block:2px solid var(--lamp);white-space:nowrap}
+.banner{position:absolute;left:50%;top:min(50%, 240px);z-index:5;transform:translate(-50%,-50%);pointer-events:none;opacity:0;text-align:center;padding:12px 26px;background:var(--shade);border-block:2px solid var(--lamp);white-space:nowrap}
 .banner b{display:block;font:400 clamp(26px,6vw,42px)/1 var(--f-display);letter-spacing:.04em;text-transform:uppercase;color:var(--lamp)}
 .banner small{display:block;margin-top:6px;font:600 13px/1.2 var(--f-num);letter-spacing:.16em;text-transform:uppercase;color:var(--ink)}
 .banner.show{animation:banner 1.9s ease forwards}
@@ -344,6 +345,7 @@ button:focus-visible{outline:2px solid var(--lamp);outline-offset:2px}
 .nojs{margin:0 auto;max-width:520px;padding:18px 20px;border:2px solid var(--lamp);border-radius:6px;background:var(--cave-2);color:var(--ink);font-size:16px;line-height:1.5;text-align:left}
 .nojs b{display:block;margin-bottom:6px;font:400 22px/1.1 var(--f-display);letter-spacing:.04em;text-transform:uppercase;color:var(--lamp)}
 .nojs ol{margin:8px 0 0;padding-left:20px}
+.js .nojs{display:none}
 </style>
 </head>
 <body>
@@ -509,9 +511,13 @@ function params(f) {
     chests: 1 + (veta ? 1 : 0) + (f >= 6 ? 1 : 0)
   };
 }
-function maxCols() {
+const BASE_COLS = 9;
+const isNarrow = () => ($('frame-scroll').clientWidth || 360) < 520;
+function boardCols(w) {
   const avail = $('frame-scroll').clientWidth || 360;
-  return Math.max(8, Math.floor((avail - 32 + 2) / (26 + 2)));
+  const fit = Math.max(7, Math.floor((avail - 32 + 2) / (30 + 2)));
+  // En teléfono el ancho queda fijo y el tablero crece solo hacia abajo
+  return isNarrow() ? Math.min(BASE_COLS, fit) : Math.min(w, fit);
 }
 function newRun() {
   return {
@@ -524,8 +530,8 @@ function newRun() {
 function newFloor() {
   const p = params(G.floor);
   let w = p.w, h = p.h;
-  const mc = maxCols();
-  if (w > mc) { const total = w * h; w = mc; h = Math.ceil(total / w); }
+  const cols = boardCols(w);
+  if (cols < w) { const total = w * h; w = cols; h = Math.ceil(total / w); }
   const N = w * h, mines = Math.round(N * p.dens);
   G.board = {
     w, h, mines, safe: N - mines, veta: p.veta, gemsTarget: p.gems, chests: p.chests,
@@ -536,6 +542,7 @@ function newFloor() {
   combo = 0; targeting = null; peek = false; busy = false; overShown = null;
   focusIdx = Math.floor(N / 2);
   buildBoard(); updateHud();
+  if (window.scrollY > 0) window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
   banner(`Piso ${G.floor}`, p.veta ? `${depth(G.floor)} · veta madre` : depth(G.floor));
   setStatus(G.floor === 1
     ? 'El primer golpe siempre es seguro. <b>Elige cualquier roca.</b>'
@@ -636,7 +643,7 @@ function fitBoard() {
   const gap = 2, chrome = 32;
   const cw = Math.floor((avail - chrome - gap * (B.w - 1)) / B.w);
   const ch = Math.floor((window.innerHeight - 340 - chrome - gap * (B.h - 1)) / B.h);
-  let cell = Math.min(cw, Math.max(ch, 30), 46);
+  let cell = isNarrow() ? Math.min(cw, 46) : Math.min(cw, Math.max(ch, 30), 46);
   cell = Math.max(cell, 22);
   boardEl.style.setProperty('--cell', cell + 'px');
   lampTX = lampX = (B.w * (cell + gap) + 12) / 2;
